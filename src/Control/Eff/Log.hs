@@ -61,7 +61,7 @@ runLogPure = handle_relay (\x -> return (x, []))
 runLog :: (Typeable l, Typeable m, Lifted m r)
   => Logger m l -> Eff (Log l ': r) a -> Eff r a
 runLog logger = handle_relay return
-                             (\(Log l) k -> k () >>= \x -> x <$ lift (logger l))
+                             (\(Log l) k -> lift (logger l) >> k ())
 
 -- | Filter Log entries with a predicate.
 --
