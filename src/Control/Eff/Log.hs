@@ -1,44 +1,43 @@
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveDataTypeable    #-}
-{-# LANGUAGE DeriveFunctor         #-}
 {-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeOperators         #-}
-module Control.Eff.Log
-  ( Log
-  , Logger
-  , logE
-  , filterLog
-  , filterLog'
-  , runLogPure
-  , runLogStdout
-  , runLogStderr
-  , runLogFile
-  , runLogWithLoggerSet
---  , runLog
-  -- | reexports from fast-logger
-  , ToLogStr(toLogStr)
-  , LogStr
-  ) where
+module Control.Eff.Log ( Log
+                       , Logger
+                       , logE
+                       , filterLog
+                       , filterLog'
+                       , runLogPure
+                       , runLog
+                       ) where
 
 import Control.Applicative   ((<$>), (<*), (<$))
 import Control.Eff
 import Control.Eff.Lift      (Lifted, lift)
 import Control.Monad         (when)
-import Data.Monoid           ((<>))
+import Control.Monad.Base    (MonadBase(..))
+import Control.Monad.Trans.Control (MonadBaseControl(..))
 import Data.Typeable         (Typeable)
-import System.Log.FastLogger (LogStr, LoggerSet, ToLogStr, defaultBufSize,
-                              flushLogStr, fromLogStr, newFileLoggerSet,
-                              newStderrLoggerSet, newStdoutLoggerSet,
-                              pushLogStr, toLogStr)
 
-import qualified Data.ByteString.Char8 as B8
+data Log l v where
+  Log :: l -> Log l ()
 
-data Log a v where
-  Log :: a -> Log a ()
+instance ( MonadBase m m
+         , Lifted m r
+         , MonadBaseControl m (Eff r)
+         , Typeable l
+         ) => MonadBaseControl m (Eff (Log l ': r)) where
+    type StM (Eff (Log l ': r)) a = StM (Eff r) (a, [l])
+    liftBaseWith f = raise $ liftBaseWith $ \runInBase ->
+                       f (runInBase . runLogPure)
+    restoreM x = do (a, ls :: [l]) <- raise (restoreM x)
+                    mapM_ logE ls
+                    return a
 
 logLine :: Log a v -> a
 logLine (Log l) = l
@@ -81,48 +80,3 @@ filterLog f = interpose return h
 filterLog' :: (Typeable l, Member (Log l) r)
   => (l -> Bool) -> proxy l -> Eff r a -> Eff r a
 filterLog' predicate _ = filterLog predicate
-
--- | Log to stdout.
-runLogStdout :: (Typeable l, ToLogStr l, Lifted IO r)
-  => proxy l -> Eff (Log l ': r) a -> Eff r a
-runLogStdout proxy eff = do
-    s <- lift $ newStdoutLoggerSet defaultBufSize
-    runLogWithLoggerSet s proxy eff <* lift (flushLogStr s)
-
--- | Log to stderr.
-runLogStderr :: (Typeable l, ToLogStr l, Lifted IO r)
-  => proxy l -> Eff (Log l ': r) a -> Eff r a
-runLogStderr proxy eff = do
-    s <- lift $ newStderrLoggerSet defaultBufSize
-    runLogWithLoggerSet s proxy eff <* lift (flushLogStr s)
-
--- | Log to file.
-runLogFile :: (Typeable l, ToLogStr l, Lifted IO r)
-  => FilePath -> proxy l -> Eff (Log l ': r) a -> Eff r a
-runLogFile f proxy eff = do
-    s <- lift $ newFileLoggerSet defaultBufSize f
-    runLogWithLoggerSet s proxy eff <* lift (flushLogStr s)
-
--- | Log to a file using a 'LoggerSet'.
---
--- Note, that you will still have to call 'flushLogStr' on the 'LoggerSet'
--- at one point.
---
--- With that function you can combine a logger in a surrounding IO action
--- with a logger in the 'Eff' effect.
---
--- >data Proxy a = Proxy
--- >
--- > main :: IO ()
--- > main = do
--- >     loggerSet <- newStderrLoggerSet defaultBufSize
--- >     pushLogStr loggerSet "logging from outer space^WIO\n"
--- >     runLift $ runLogWithLoggerSet loggerSet (Proxy :: Proxy String) $
--- >         logE ("logging from within Eff" :: String)
--- >     flushLogStr loggerSet
-runLogWithLoggerSet :: (Typeable l, ToLogStr l, Lifted IO r)
-  => LoggerSet -> proxy l -> Eff (Log l ': r) a -> Eff r a
-runLogWithLoggerSet s _ = runLog (loggerSetLogger s)
-
-loggerSetLogger :: ToLogStr l => LoggerSet -> Logger IO l
-loggerSetLogger loggerSet = pushLogStr loggerSet . (<> "\n") . toLogStr
