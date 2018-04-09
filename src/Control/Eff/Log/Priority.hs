@@ -23,8 +23,8 @@ data Priority =
     DEBUG | INFO | NOTICE | WARNING | ERROR | CRITICAL | ALERT | EMERGENCY
   deriving (Bounded, Enum, Eq, Ord, Read, Show, Typeable)
 
-data PriorityLog l = PriorityLog {-# UNPACK #-} !Priority
-                                 {-# UNPACK #-} !l
+data PriorityLog l = PriorityLog !Priority
+                                 !l
 
 logTo :: (Typeable l, Member (Log (PriorityLog l)) r)
   => Priority -> l -> Eff r ()
