@@ -30,7 +30,6 @@ data Log l v where
 instance ( MonadBase m m
          , Lifted m r
          , MonadBaseControl m (Eff r)
-         , Typeable l
          ) => MonadBaseControl m (Eff (Log l ': r)) where
     type StM (Eff (Log l ': r)) a = StM (Eff r) (a, [l])
     liftBaseWith f = raise $ liftBaseWith $ \runInBase ->
@@ -46,19 +45,16 @@ logLine (Log l) = l
 type Logger m l = l -> m ()
 
 -- | Log something.
-logE :: (Typeable l, Member (Log l) r) => l -> Eff r ()
+logE :: Member (Log l) r => l -> Eff r ()
 logE = send . Log
 
 -- | Collect log messages in a list.
-runLogPure :: (Typeable l)
-  => Eff (Log l ': r) a
-  -> Eff r (a, [l])
+runLogPure :: Eff (Log l ': r) a -> Eff r (a, [l])
 runLogPure = handle_relay (\x -> return (x, []))
                           (\(Log l) k -> k () >>= \(x, ls) -> return (x, l:ls))
 
 -- | Run the 'Logger' action in the base monad for every log line.
-runLog :: (Typeable l, Typeable m, Lifted m r)
-  => Logger m l -> Eff (Log l ': r) a -> Eff r a
+runLog :: Lifted m r => Logger m l -> Eff (Log l ': r) a -> Eff r a
 runLog logger = handle_relay return
                              (\(Log l) k -> lift (logger l) >> k ())
 
@@ -66,8 +62,8 @@ runLog logger = handle_relay return
 --
 -- Note that, most of the time an explicit type signature for the predicate
 -- will be required.
-filterLog :: forall l r a. (Typeable l, Member (Log l) r)
-  => (l -> Bool) -> Eff r a -> Eff r a
+filterLog :: forall l r a. Member (Log l) r
+          => (l -> Bool) -> Eff r a -> Eff r a
 filterLog f = interpose return h
   where
     h :: Log l v -> (v -> Eff r b) -> Eff r b
@@ -77,6 +73,6 @@ filterLog f = interpose return h
 -- | Filter Log entries with a predicate and a proxy.
 --
 -- This is the same as 'filterLog' but with a proxy l for type inference.
-filterLog' :: (Typeable l, Member (Log l) r)
-  => (l -> Bool) -> proxy l -> Eff r a -> Eff r a
+filterLog' :: Member (Log l) r
+           => (l -> Bool) -> proxy l -> Eff r a -> Eff r a
 filterLog' predicate _ = filterLog predicate

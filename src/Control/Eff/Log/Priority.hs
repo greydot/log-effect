@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MonoLocalBinds        #-}
 {-# LANGUAGE DeriveDataTypeable    #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -16,41 +17,57 @@ module Control.Eff.Log.Priority ( PriorityLog(..)
 
 import Control.Eff           (Eff, Member)
 import Control.Eff.Log
+import Data.ByteString
+import qualified Data.ByteString.Char8 as Char8
 import Data.Monoid           ((<>))
+import Data.Text (Text)
+import Data.Text.Encoding (encodeUtf8)
 import Data.Typeable         (Typeable)
+
+class LogMessage l where
+  toMsg :: l -> ByteString
+
+instance LogMessage ByteString where
+  toMsg = id
+
+instance LogMessage [Char] where
+  toMsg = Char8.pack
+
+instance LogMessage Text where
+  toMsg = encodeUtf8
 
 data Priority =
     DEBUG | INFO | NOTICE | WARNING | ERROR | CRITICAL | ALERT | EMERGENCY
   deriving (Bounded, Enum, Eq, Ord, Read, Show, Typeable)
 
-data PriorityLog l = PriorityLog !Priority
-                                 !l
+data PriorityLog = PriorityLog !Priority
+                               !ByteString
 
-logTo :: (Typeable l, Member (Log (PriorityLog l)) r)
+logTo :: (LogMessage l, Member (Log PriorityLog) r)
   => Priority -> l -> Eff r ()
-logTo p l = logE (PriorityLog p l)
+logTo p l = logE (PriorityLog p $ toMsg l)
 {-# INLINE logTo #-}
 
-logDebug :: (Typeable l, Member (Log (PriorityLog l)) r) => l -> Eff r ()
+logDebug :: (LogMessage l, Member (Log PriorityLog) r) => l -> Eff r ()
 logDebug = logTo DEBUG
 
-logInfo :: (Typeable l, Member (Log (PriorityLog l)) r) => l -> Eff r ()
+logInfo :: (LogMessage l, Member (Log PriorityLog) r) => l -> Eff r ()
 logInfo = logTo INFO
 
-logNotice :: (Typeable l, Member (Log (PriorityLog l)) r) => l -> Eff r ()
+logNotice :: (LogMessage l, Member (Log PriorityLog) r) => l -> Eff r ()
 logNotice = logTo NOTICE
 
-logWarning :: (Typeable l, Member (Log (PriorityLog l)) r) => l -> Eff r ()
+logWarning :: (LogMessage l, Member (Log PriorityLog) r) => l -> Eff r ()
 logWarning = logTo WARNING
 
-logError :: (Typeable l, Member (Log (PriorityLog l)) r) => l -> Eff r ()
+logError :: (LogMessage l, Member (Log PriorityLog) r) => l -> Eff r ()
 logError = logTo ERROR
 
-logCritical :: (Typeable l, Member (Log (PriorityLog l)) r) => l -> Eff r ()
+logCritical :: (LogMessage l, Member (Log PriorityLog) r) => l -> Eff r ()
 logCritical = logTo CRITICAL
 
-logAlert :: (Typeable l, Member (Log (PriorityLog l)) r) => l -> Eff r ()
+logAlert :: (LogMessage l, Member (Log PriorityLog) r) => l -> Eff r ()
 logAlert = logTo ALERT
 
-logEmergency :: (Typeable l, Member (Log (PriorityLog l)) r) => l -> Eff r ()
+logEmergency :: (LogMessage l, Member (Log PriorityLog) r) => l -> Eff r ()
 logEmergency = logTo EMERGENCY
