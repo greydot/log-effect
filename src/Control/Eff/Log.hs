@@ -8,12 +8,15 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeOperators         #-}
 module Control.Eff.Log ( Log
+                       , LogM
                        , Logger
                        , logE
+                       , logM
                        , filterLog
                        , filterLog'
                        , runLogPure
                        , runLog
+                       , runLogM
                        ) where
 
 import Control.Applicative   ((<$>), (<*), (<$))
@@ -76,3 +79,27 @@ filterLog f = interpose return h
 filterLog' :: Member (Log l) r
            => (l -> Bool) -> proxy l -> Eff r a -> Eff r a
 filterLog' predicate _ = filterLog predicate
+
+data LogM m l v where
+  AskLogger :: LogM m l (Logger m l)
+
+askLogger :: Member (LogM m l) r => Eff r (Logger m l)
+askLogger = send AskLogger
+
+logM :: (Member (LogM m l) r, Lifted m r) => l -> Eff r ()
+logM l = do logger <- askLogger
+            lift (logger l)
+
+runLogM :: Lifted m r => Logger m l -> Eff (LogM m l ': r) a -> Eff r a
+runLogM logger = handle_relay return
+                              (\AskLogger -> ($ logger))
+
+instance ( MonadBase m m
+         , Lifted m r
+         , MonadBaseControl m (Eff r)
+         ) => MonadBaseControl m (Eff (LogM m l ': r)) where
+    type StM (Eff (LogM m l ': r)) a = StM (Eff r) a
+    liftBaseWith f = do l <- askLogger
+                        raise $ liftBaseWith $ \runInBase ->
+                          f (runInBase . runLogM l)
+    restoreM = raise . restoreM
