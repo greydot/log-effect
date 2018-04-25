@@ -16,6 +16,7 @@ module Control.Eff.Log.Priority ( PriorityLog(..)
                                 ) where
 
 import Control.Eff           (Eff, Member)
+import Control.Eff.Lift (Lifted)
 import Control.Eff.Log
 import Data.ByteString
 import qualified Data.ByteString.Char8 as Char8
@@ -43,31 +44,56 @@ data Priority =
 data PriorityLog = PriorityLog !Priority
                                !ByteString
 
-logTo :: (LogMessage l, Member (Log PriorityLog) r)
-  => Priority -> l -> Eff r ()
-logTo p l = logE (PriorityLog p $ toMsg l)
+logTo :: ( LogMessage l
+         , Member (LogM m PriorityLog) r
+         , Lifted m r ) => Priority -> l -> Eff r ()
+logTo p l = logM (PriorityLog p $ toMsg l)
 {-# INLINE logTo #-}
 
-logDebug :: (LogMessage l, Member (Log PriorityLog) r) => l -> Eff r ()
+logDebug :: ( LogMessage l
+            , Member (LogM m PriorityLog) r
+            , Lifted m r ) => l -> Eff r ()
 logDebug = logTo DEBUG
+{-# INLINE logDebug #-}
 
-logInfo :: (LogMessage l, Member (Log PriorityLog) r) => l -> Eff r ()
+logInfo :: ( LogMessage l
+           , Member (LogM m PriorityLog) r
+           , Lifted m r ) => l -> Eff r ()
 logInfo = logTo INFO
+{-# INLINE logInfo #-}
 
-logNotice :: (LogMessage l, Member (Log PriorityLog) r) => l -> Eff r ()
+logNotice :: ( LogMessage l
+             , Member (LogM m PriorityLog) r
+             , Lifted m r ) => l -> Eff r ()
 logNotice = logTo NOTICE
+{-# INLINE logNotice #-}
 
-logWarning :: (LogMessage l, Member (Log PriorityLog) r) => l -> Eff r ()
+logWarning :: ( LogMessage l
+              , Member (LogM m PriorityLog) r
+              , Lifted m r ) => l -> Eff r ()
 logWarning = logTo WARNING
+{-# INLINE logWarning #-}
 
-logError :: (LogMessage l, Member (Log PriorityLog) r) => l -> Eff r ()
+logError :: ( LogMessage l
+            , Member (LogM m PriorityLog) r
+            , Lifted m r ) => l -> Eff r ()
 logError = logTo ERROR
+{-# INLINE logError #-}
 
-logCritical :: (LogMessage l, Member (Log PriorityLog) r) => l -> Eff r ()
+logCritical :: ( LogMessage l
+               , Member (LogM m PriorityLog) r
+               , Lifted m r ) => l -> Eff r ()
 logCritical = logTo CRITICAL
+{-# INLINE logCritical #-}
 
-logAlert :: (LogMessage l, Member (Log PriorityLog) r) => l -> Eff r ()
+logAlert :: ( LogMessage l
+            , Member (LogM m PriorityLog) r
+            , Lifted m r ) => l -> Eff r ()
 logAlert = logTo ALERT
+{-# INLINE logAlert #-}
 
-logEmergency :: (LogMessage l, Member (Log PriorityLog) r) => l -> Eff r ()
+logEmergency :: ( LogMessage l
+                , Member (LogM m PriorityLog) r
+                , Lifted m r ) => l -> Eff r ()
 logEmergency = logTo EMERGENCY
+{-# INLINE logEmergency #-}
