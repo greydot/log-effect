@@ -10,6 +10,8 @@
 module Control.Eff.Log ( Log
                        , LogM
                        , Logger
+                       , stdoutLogger
+                       , stderrLogger
                        , LogMessage(..)
                        , logE
                        , logM
@@ -31,6 +33,7 @@ import qualified Data.ByteString.Char8 as Char8
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import Data.Typeable         (Typeable)
+import System.IO (stderr, stdout)
 
 data Log l v where
   Log :: l -> Log l ()
@@ -51,6 +54,12 @@ logLine (Log l) = l
 
 -- | a monadic action that does the real logging
 type Logger m l = l -> m ()
+
+stdoutLogger :: (LogMessage l, MonadBase IO m) => Logger m l
+stdoutLogger = liftBase . Char8.hPutStrLn stdout . toMsg
+
+stderrLogger :: (LogMessage l, MonadBase IO m) => Logger m l
+stderrLogger = liftBase . Char8.hPutStrLn stderr . toMsg
 
 -- | Log something.
 logE :: Member (Log l) r => l -> Eff r ()
