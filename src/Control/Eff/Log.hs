@@ -10,6 +10,7 @@
 module Control.Eff.Log ( Log
                        , LogM
                        , Logger
+                       , LogMessage(..)
                        , logE
                        , logM
                        , filterLog
@@ -25,6 +26,10 @@ import Control.Eff.Lift      (Lifted, lift)
 import Control.Monad         (when)
 import Control.Monad.Base    (MonadBase(..))
 import Control.Monad.Trans.Control (MonadBaseControl(..))
+import Data.ByteString (ByteString)
+import qualified Data.ByteString.Char8 as Char8
+import Data.Text (Text)
+import Data.Text.Encoding (encodeUtf8)
 import Data.Typeable         (Typeable)
 
 data Log l v where
@@ -103,3 +108,15 @@ instance ( MonadBase m m
                         raise $ liftBaseWith $ \runInBase ->
                           f (runInBase . runLogM l)
     restoreM = raise . restoreM
+
+class LogMessage l where
+  toMsg :: l -> ByteString
+
+instance LogMessage ByteString where
+  toMsg = id
+
+instance LogMessage [Char] where
+  toMsg = Char8.pack
+
+instance LogMessage Text where
+  toMsg = encodeUtf8

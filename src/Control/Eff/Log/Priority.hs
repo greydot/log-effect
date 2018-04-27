@@ -1,7 +1,8 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MonoLocalBinds        #-}
 {-# LANGUAGE DeriveDataTypeable    #-}
 {-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE OverloadedStrings     #-}
 module Control.Eff.Log.Priority ( PriorityLog(..)
                                 , Priority(..)
                                 , logTo
@@ -18,24 +19,11 @@ module Control.Eff.Log.Priority ( PriorityLog(..)
 import Control.Eff           (Eff, Member)
 import Control.Eff.Lift (Lifted)
 import Control.Eff.Log
-import Data.ByteString
+import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as Char8
+import Data.Char (toLower)
 import Data.Monoid           ((<>))
-import Data.Text (Text)
-import Data.Text.Encoding (encodeUtf8)
 import Data.Typeable         (Typeable)
-
-class LogMessage l where
-  toMsg :: l -> ByteString
-
-instance LogMessage ByteString where
-  toMsg = id
-
-instance LogMessage [Char] where
-  toMsg = Char8.pack
-
-instance LogMessage Text where
-  toMsg = encodeUtf8
 
 data Priority =
     DEBUG | INFO | NOTICE | WARNING | ERROR | CRITICAL | ALERT | EMERGENCY
@@ -43,6 +31,13 @@ data Priority =
 
 data PriorityLog = PriorityLog !Priority
                                !ByteString
+
+instance LogMessage PriorityLog where
+  toMsg (PriorityLog p m) = mconcat [ "["
+                                    , Char8.pack $ map toLower $ show p
+                                    , "]: "
+                                    , m
+                                    ]
 
 logTo :: ( LogMessage l
          , Member (LogM m PriorityLog) r
