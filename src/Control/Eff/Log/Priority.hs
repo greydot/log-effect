@@ -35,7 +35,7 @@ data PriorityLog = PriorityLog !Priority
 instance LogMessage PriorityLog where
   toMsg (PriorityLog p m) = mconcat [ "["
                                     , Char8.pack $ map toLower $ show p
-                                    , "]: "
+                                    , "] "
                                     , m
                                     ]
 
