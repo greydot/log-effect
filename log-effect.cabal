@@ -5,16 +5,15 @@ name:                log-effect
 version:             0.4.0.2
 synopsis:            An extensible log effect using extensible-effects
 description:         Any help (especially documentation) is very welcome,
-homepage:            https://github.com/ibotty/log-effect
+homepage:            https://github.com/greydot/log-effect
 license:             MIT
 license-file:        LICENSE
 author:              Tobias Florek
-maintainer:          tob@butter.sh
+maintainer:          Lana Black <lanablack@amok.cc>
 -- copyright:           
 category:            Control, Effect, Logging
 build-type:          Simple
 extra-source-files:    Changelog.md
-                     , examples/IOLogger.hs
 cabal-version:       >=1.10
 
 library
@@ -32,5 +31,5 @@ library
 
 source-repository head
   type: git
-  location: https://github.com/ibotty/log-effect
+  location: https://github.com/greydot/log-effect
 
