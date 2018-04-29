@@ -19,7 +19,6 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:     Control.Eff.Log
-                     , Control.Eff.Log.Priority
   -- other-modules:       
   -- other-extensions:    
   build-depends:       base >=4.6 && <5.0
