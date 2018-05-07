@@ -3,14 +3,16 @@
 [![Build Status](https://secure.travis-ci.org/greydot/log-effect.png)](http://travis-ci.org/greydot/log-effect)
 
 An extensible log effect using extensible-effects. This library introduces two
-new effects to your extensible effects arsenal, `Log` and `LogM`.
+new effects to your extensible effects arsenal, `Log` and `LogM`. In short, if
+you'd like to add logging to pure code (that is, without Lift effect), `Log` is
+your best choice, otherwise go for `LogM`.
 
 ## Log
 
 This is the simpler of the two. `Log` allows for logging in pure code, as well
 as filtering using `filterLog`. The downside of this effect is that when your
 code launches multiple threads using `async` or `forkIO`, messages from every
-thread other than the main thread will be lost.
+thread other than the thread where the handler is run will be lost.
 
 ## LogM
 
