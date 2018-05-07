@@ -52,12 +52,14 @@ instance ( MonadBase m m
 logLine :: Log a v -> a
 logLine (Log l) = l
 
--- | a monadic action that does the real logging
+-- | Monadic action that does the real logging
 type Logger m l = l -> m ()
 
+-- | Logger that outputs messages to stdout
 stdoutLogger :: (LogMessage l, MonadBase IO m) => Logger m l
 stdoutLogger = liftBase . Char8.hPutStrLn stdout . toMsg
 
+-- | Logger that outputs messages to stderr
 stderrLogger :: (LogMessage l, MonadBase IO m) => Logger m l
 stderrLogger = liftBase . Char8.hPutStrLn stderr . toMsg
 
@@ -100,10 +102,12 @@ data LogM m l v where
 askLogger :: Member (LogM m l) r => Eff r (Logger m l)
 askLogger = send AskLogger
 
+-- | Log something using `LogM` effect
 logM :: (Member (LogM m l) r, Lifted m r) => l -> Eff r ()
 logM l = do logger <- askLogger
             lift (logger l)
 
+-- | Run the 'Logger' action in the base monad for every log line.
 runLogM :: Lifted m r => Logger m l -> Eff (LogM m l ': r) a -> Eff r a
 runLogM logger = handle_relay return
                               (\AskLogger -> ($ logger))
@@ -118,8 +122,10 @@ instance ( MonadBase m m
                           f (runInBase . runLogM l)
     restoreM = raise . restoreM
 
+-- | Handy typeclass to convert log messages for output
 class LogMessage l where
   toMsg :: l -> ByteString
+  {-# MINIMAL toMsg #-}
 
 instance LogMessage ByteString where
   toMsg = id
