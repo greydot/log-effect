@@ -35,6 +35,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Typeable         (Typeable)
 import System.IO (stderr, stdout)
 
+-- | Simple log effect, useful in pure code
 data Log l v where
   Log :: l -> Log l ()
 
@@ -96,6 +97,7 @@ filterLog' :: Member (Log l) r
            => (l -> Bool) -> proxy l -> Eff r a -> Eff r a
 filterLog' predicate _ = filterLog predicate
 
+-- | A more advanced version of 'Log'. Adds an ability to log from multiple threads.
 data LogM m l v where
   AskLogger :: LogM m l (Logger m l)
 
