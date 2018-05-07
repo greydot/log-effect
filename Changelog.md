@@ -1,5 +1,17 @@
 # Changelog
 
+## Version 1.0
+
+	* Complete revamp of the logging effects.
+
+	* Add LogM effect.
+
+	* Add MonadBaseControl instances.
+
+	* Remove fast-logger dependency in favor of a custom typeclass.
+
+
+
 ## Version 0.4
 
  * add a proxy to most `runLog` functions to not have to supply the full

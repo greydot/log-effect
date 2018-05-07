@@ -2,13 +2,13 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                log-effect
-version:             0.4.0.2
+version:             1.0.0
 synopsis:            An extensible log effect using extensible-effects
-description:         Any help (especially documentation) is very welcome,
+description:         Introduce two logging effects to your extensible effects arsenal
 homepage:            https://github.com/greydot/log-effect
 license:             MIT
 license-file:        LICENSE
-author:              Tobias Florek
+author:              Tobias Florek, Lana Black
 maintainer:          Lana Black <lanablack@amok.cc>
 -- copyright:           
 category:            Control, Effect, Logging
