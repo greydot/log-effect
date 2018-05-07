@@ -16,3 +16,24 @@ thread other than the main thread will be lost.
 
 `LogM` loses the ability to provide logging in pure code, but at the same time
 allows to log messages from multiple threads.
+
+## Example
+
+```haskell
+import Control.Concurrent.Lifted
+import Control.Eff
+import Control.Eff.Lift
+import Control.Eff.Log
+
+someComp :: ( [ Log String, LogM IO String ] <:: r
+            , Lifted IO r
+            ) => Eff r ()
+someComp = do logE "Hello!"
+              logM "Greetings from the main thread!"
+              
+              fork $ do logM "This is a new thread, and this message is still visible."
+                        logE "Unfortunately, this one is not."
+
+main :: IO ()
+main = runLift $ runLog stdoutLogger $ runLogM stdoutLogger $ someComp
+```
