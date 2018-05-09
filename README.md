@@ -28,14 +28,19 @@ import Control.Eff.Lift
 import Control.Eff.Log
 
 someComp :: ( [ Log String, LogM IO String ] <:: r
-            , Lifted IO r
+            , LiftedBase IO r
             ) => Eff r ()
 someComp = do logE "Hello!"
               logM "Greetings from the main thread!"
               
-              fork $ do logM "This is a new thread, and this message is still visible."
-                        logE "Unfortunately, this one is not."
+              _ <- fork $ do logM "This is a new thread, and this message is still visible."
+                             logE "Unfortunately, this one is not."
+              return ()
 
 main :: IO ()
-main = runLift $ runLog stdoutLogger $ runLogM stdoutLogger $ someComp
+main = runLift $ runLog logger $ runLogM logger $ someComp
+  where
+    -- Here we have to provide an explicit signature for our logger,
+    -- because the compiler is unable to figure it out due to ambiguity.
+    logger = stdoutLogger :: Logger IO String
 ```

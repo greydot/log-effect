@@ -23,7 +23,7 @@ library
   -- other-extensions:    
   build-depends:       base >=4.6 && <5.0
                      , bytestring >= 0.10
-                     , extensible-effects >= 2.5.1.0
+                     , extensible-effects >= 2.6.0.0
                      , monad-control >= 1.0
                      , text >= 1.2
                      , transformers-base >= 0.4
