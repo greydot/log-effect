@@ -44,3 +44,8 @@ main = runLift $ runLog logger $ runLogM logger $ someComp
     -- because the compiler is unable to figure it out due to ambiguity.
     logger = stdoutLogger :: Logger IO String
 ```
+
+## See also
+
+(log-effect-syslog)[http://hackage.haskell.org/package/log-effect-syslog]
+provides necessary types and functions to work with syslog.
