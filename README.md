@@ -47,5 +47,5 @@ main = runLift $ runLog logger $ runLogM logger $ someComp
 
 ## See also
 
-(log-effect-syslog)[http://hackage.haskell.org/package/log-effect-syslog]
+[log-effect-syslog](http://hackage.haskell.org/package/log-effect-syslog)
 provides necessary types and functions to work with syslog.
