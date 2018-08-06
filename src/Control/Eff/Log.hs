@@ -24,6 +24,7 @@ module Control.Eff.Log ( Log
 
 import Control.Applicative   ((<$>), (<*), (<$))
 import Control.Eff
+import Control.Eff.Extend
 import Control.Eff.Lift      (Lifted, lift)
 import Control.Monad         (when)
 import Control.Monad.Base    (MonadBase(..))
