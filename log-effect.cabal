@@ -15,7 +15,7 @@ category:            Control, Effect, Logging
 build-type:          Simple
 extra-source-files:  Changelog.md, README.md
 cabal-version:       >=1.10
-Tested-With:         GHC == 8.0.2, GHC == 8.2.2, GHC == 8.4.3
+Tested-With:         GHC == 8.2.2, GHC == 8.4.3, GHC == 8.6.3
 
 library
   exposed-modules:     Control.Eff.Log
