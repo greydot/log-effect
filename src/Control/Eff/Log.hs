@@ -22,7 +22,6 @@ module Control.Eff.Log ( Log
                        , runLogM
                        ) where
 
-import Control.Applicative   ((<$>), (<*), (<$))
 import Control.Eff
 import Control.Eff.Extend
 import Control.Monad         (when)
@@ -33,7 +32,6 @@ import qualified Data.ByteString.Char8 as Char8
 import Data.Function (fix)
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
-import Data.Typeable         (Typeable)
 import System.IO (stderr, stdout)
 
 -- | Simple log effect, useful in pure code
@@ -58,9 +56,6 @@ instance ( MonadBase m m
     restoreM x = do (a, ls :: [l]) <- raise (restoreM x)
                     mapM_ logE ls
                     return a
-
-logLine :: Log a v -> a
-logLine (Log l) = l
 
 -- | Monadic action that does the real logging
 type Logger m l = l -> m ()
