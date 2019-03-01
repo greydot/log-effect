@@ -40,7 +40,7 @@ executable log-example
   hs-source-dirs:      examples
   main-is:             log.hs
   default-language:    Haskell2010
-  ghc-options:         -Wall -Werror -threaded
+  ghc-options:         -Wall -threaded
 
 
 source-repository head
