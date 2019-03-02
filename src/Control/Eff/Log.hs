@@ -22,23 +22,29 @@ module Control.Eff.Log ( Log
                        , runLogM
                        ) where
 
-import Control.Applicative   ((<$>), (<*), (<$))
 import Control.Eff
 import Control.Eff.Extend
-import Control.Eff.Lift      (Lifted, lift)
 import Control.Monad         (when)
 import Control.Monad.Base    (MonadBase(..))
 import Control.Monad.Trans.Control (MonadBaseControl(..))
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as Char8
+import Data.Function (fix)
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
-import Data.Typeable         (Typeable)
 import System.IO (stderr, stdout)
 
 -- | Simple log effect, useful in pure code
 data Log l v where
   Log :: l -> Log l ()
+
+instance Monad m => Handle (Log l) r a (b -> (l -> b -> b) -> m (a,b)) where
+  handle step q (Log l) e append = step (q ^$ ()) e append >>=
+    \(x, ls) -> return (x, l `append` ls)
+
+instance Monad m => Handle (Log l) r a ((l -> m c) -> m a) where
+  handle step q (Log l) action = step (q ^$ ()) action >>=
+    \x -> action l >> return x
 
 instance ( MonadBase m m
          , Lifted m r
@@ -50,9 +56,6 @@ instance ( MonadBase m m
     restoreM x = do (a, ls :: [l]) <- raise (restoreM x)
                     mapM_ logE ls
                     return a
-
-logLine :: Log a v -> a
-logLine (Log l) = l
 
 -- | Monadic action that does the real logging
 type Logger m l = l -> m ()
@@ -71,13 +74,17 @@ logE = send . Log
 
 -- | Collect log messages in a list.
 runLogPure :: Eff (Log l ': r) a -> Eff r (a, [l])
-runLogPure = handle_relay (\x -> return (x, []))
-                          (\(Log l) k -> k () >>= \(x, ls) -> return (x, l:ls))
+runLogPure m = fix (handle_relay ret) m [] (:)
+  where
+    ret :: Monad m => a -> b -> (l -> b -> b) -> m (a, b)
+    ret l e _ = return (l, e)
 
 -- | Run the 'Logger' action in the base monad for every log line.
 runLog :: Lifted m r => Logger m l -> Eff (Log l ': r) a -> Eff r a
-runLog logger = handle_relay return
-                             (\(Log l) k -> lift (logger l) >> k ())
+runLog logger m = fix (handle_relay ret) m (lift . logger)
+  where
+    ret :: Monad m => a -> (l -> m c) -> m a
+    ret a _ = return a
 
 -- | Filter Log entries with a predicate.
 --
@@ -85,10 +92,10 @@ runLog logger = handle_relay return
 -- will be required.
 filterLog :: forall l r a. Member (Log l) r
           => (l -> Bool) -> Eff r a -> Eff r a
-filterLog f = interpose return h
+filterLog f = fix (respond_relay' h return)
   where
-    h :: Log l v -> (v -> Eff r b) -> Eff r b
-    h (Log l) k = when (f l) (logE l) >> k ()
+    h :: (Eff r b -> Eff r b) -> Arrs r v b -> Log l v -> Eff r b
+    h step q (Log l) = when (f l) (logE l) >>= \x -> step (q ^$ x)
 
 
 -- | Filter Log entries with a predicate and a proxy.
@@ -112,8 +119,14 @@ logM l = do logger <- askLogger
 
 -- | Run the 'Logger' action in the base monad for every log line.
 runLogM :: Lifted m r => Logger m l -> Eff (LogM m l ': r) a -> Eff r a
-runLogM logger = handle_relay return
-                              (\AskLogger -> ($ logger))
+runLogM logger m = fix (handle_relay ret) m logger
+  where
+    ret :: Monad m' => a -> Logger m l -> m' a
+    ret x _ = return x
+
+
+instance Monad m => Handle (LogM m' l) r a (Logger m' l -> m a) where
+  handle step q AskLogger logger = step (q ^$ logger) logger
 
 instance ( MonadBase m m
          , Lifted m r
